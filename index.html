@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Weekly Catering Picker</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --card:#ffffff; --ink:#1c2333; --muted:#6b7280; --line:#e4e8f0;
+    --brand:#1452b8; --brand-ink:#0e3a85; --accent:#e8f1ff;
+    --ok:#0a7a36; --okbg:#e7f6ec; --amber:#9a5800; --amberbg:#fdf2e2; --bad:#c01818; --badbg:#fdeaea;
+    --shadow:0 1px 3px rgba(20,40,80,.08),0 6px 18px rgba(20,40,80,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:1080px;margin:0 auto;padding:20px 18px 48px;}
+  .appheader{display:flex;align-items:center;gap:14px;background:#f68b34;color:#fff;
+    border-radius:12px;padding:14px 18px;margin-bottom:16px;box-shadow:var(--shadow);}
+  .appheader .htext{min-width:0;}
+  h1{font-size:22px;margin:0;color:#fff;line-height:1.2;}
+  h1 .thin{font-weight:500;opacity:.95;}
+  .sub{color:#fff;opacity:.92;font-size:13px;margin:3px 0 0;}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);
+    padding:16px;margin-bottom:16px;}
+  .row{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:flex-end;}
+  .field{display:flex;flex-direction:column;gap:4px;}
+  .field label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;}
+  input[type=number],input[type=text],select{
+    font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);min-width:90px;}
+  input:focus,select:focus{outline:2px solid var(--accent);border-color:var(--brand);}
+  select{min-width:200px;}
+  .checks{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;}
+  .checks label{display:flex;gap:6px;align-items:center;font-size:14px;font-weight:500;color:var(--ink);cursor:pointer;}
+  button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:#fff;padding:8px 14px;color:var(--ink);}
+  button:hover{background:#f7f9fd;}
+  button.primary{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700;font-size:16px;padding:11px 22px;}
+  button.primary:hover{background:var(--brand-ink);}
+  button.primary:disabled{opacity:.5;cursor:not-allowed;}
+  .databar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;}
+  .status{font-size:13px;color:var(--muted);}
+  .status b{color:var(--ink);}
+  .databtns{display:flex;gap:8px;flex-wrap:wrap;}
+  details.more{margin-top:10px;}
+  details.more summary{cursor:pointer;color:var(--brand);font-size:13px;}
+  .urlrow{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+  .urlrow input{flex:1;min-width:240px;}
+  .results{display:grid;grid-template-columns:1.55fr 1fr;gap:16px;align-items:start;}
+  @media(max-width:780px){.results{grid-template-columns:1fr;}}
+  .restitle{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0 0 10px;}
+  .rest{font-size:21px;font-weight:800;color:var(--brand-ink);margin:0;}
+  .combotype{color:var(--muted);font-size:13px;margin:2px 0 14px;}
+  .meal{border-top:1px solid var(--line);padding:12px 0;}
+  .meal:first-of-type{border-top:none;}
+  .meal .name{font-size:16px;font-weight:700;margin:0 0 3px;}
+  .meal .line{color:#454b5a;font-size:13.5px;margin:1px 0;}
+  .meal .meta{color:var(--muted);font-size:12.5px;margin:1px 0;}
+  .badge{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:99px;margin-right:6px;vertical-align:1px;}
+  .badge.e{background:#eef4ff;color:#1452b8;} .badge.a{background:#eefaf0;color:#0a7a36;}
+  .badge.d{background:#f6eefc;color:#8a3bb0;}
+  .totals{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:14.5px;}
+  .totals .big{font-weight:800;font-size:16px;}
+  .ordersum{background:#eef4ff;border:1px solid #d6e4fb;border-radius:8px;padding:10px 12px;font-size:14.5px;line-height:1.7;}
+  .ordersum .qty{font-weight:800;color:var(--brand-ink);}
+  .orderline{font-size:14.5px;color:var(--ink);}
+  .diet{margin-top:12px;display:flex;flex-direction:column;gap:8px;}
+  .diet .item{border-radius:8px;padding:8px 10px;font-size:14px;}
+  .diet .ok{background:var(--okbg);color:var(--ok);font-weight:600;}
+  .diet .bad{background:var(--badbg);color:var(--bad);font-weight:600;}
+  .diet .note{display:block;margin-top:4px;font-weight:500;color:var(--amber);background:var(--amberbg);
+    border-radius:6px;padding:6px 8px;font-size:13px;}
+  .dz{background:#fffdf7;}
+  .dess{border-top:1px solid var(--line);padding:9px 0;}
+  .dess:first-of-type{border-top:none;}
+  .dess .dn{font-weight:600;}
+  .dess.sug .dn{color:#9b3d8c;}
+  .dess .dm{color:var(--muted);font-size:12.5px;}
+  .empty{color:var(--muted);font-style:italic;}
+  .ok-text{color:var(--ok);} .amber-text{color:var(--amber);}
+  .hint{color:var(--muted);}
+  .err{color:var(--bad);font-weight:600;}
+  #previewTop>summary{cursor:pointer;font-weight:700;color:var(--brand-ink);font-size:15px;list-style:none;}
+  #previewTop>summary::-webkit-details-marker{display:none;}
+  #previewTop>summary::before{content:"▸ ";}
+  #previewTop[open]>summary::before{content:"▾ ";}
+  .cnt{color:var(--muted);font-weight:500;font-size:12.5px;}
+  .rcard{border:1px solid var(--line);border-radius:8px;margin:8px 0;padding:0 10px;background:#fbfcfe;}
+  .rcard>summary{cursor:pointer;font-weight:600;padding:8px 2px;}
+  .pmeals{padding:2px 0 8px;}
+  .pmeal{border-top:1px dashed var(--line);padding:7px 2px;}
+  .pmeal:first-child{border-top:none;}
+  .pmn{font-weight:600;font-size:14px;}
+  .pmeta{color:var(--muted);font-size:12.5px;margin-top:2px;}
+  .pflags{margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;}
+  .ptag{font-size:11px;padding:1px 7px;border-radius:99px;background:#eef1f6;color:#556;}
+  .ptag.g{background:var(--okbg);color:var(--ok);}
+  .ptag.w{background:var(--amberbg);color:var(--amber);}
+  .ptag.b{background:#eef4ff;color:var(--brand);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="appheader">
+    <div class="htext">
+      <h1>🍽️ Weekly Catering Picker</h1>
+      <p class="sub">Upload your menu CSV, then pick a restaurant and a valid combo (1 entrée + 1 appetizer, 2 entrées, or 2 appetizers) and reroll until you like it.</p>
+    </div>
+  </header>
+
+  <div class="panel">
+    <div class="databar">
+      <div class="status" id="status">No menu loaded yet.</div>
+      <div class="databtns">
+        <input type="file" id="fileInput" accept=".csv,text/csv" hidden />
+        <button id="uploadBtn">⬆️ Upload menu CSV</button>
+        <button id="templateBtn" title="Download a fill-in example so you can build your own">⬇️ CSV template</button>
+      </div>
+    </div>
+    <div class="hint" id="uploadHint" style="margin-top:8px;font-size:12.5px;">
+      Upload a CSV exported from your spreadsheet (File → Download → .csv) <b>each time you open this</b> — nothing is stored. New here? Grab the <b>CSV template</b> to see the format.
+    </div>
+  </div>
+
+  <div class="panel" id="previewPanel" style="display:none;">
+    <details id="previewTop">
+      <summary class="previewSummary">🔍 Preview how your menu imported <span id="previewCount" class="cnt"></span></summary>
+      <div id="previewBody"></div>
+    </details>
+  </div>
+
+  <div class="panel">
+    <div class="row">
+      <div class="field"><label for="people">People</label>
+        <input type="number" id="people" min="1" max="1000" value="10" /></div>
+      <div class="field"><label for="maxPrice">Max $ total (blank = none)</label>
+        <input type="text" id="maxPrice" placeholder="e.g. 400" /></div>
+      <div class="field"><label for="comboType">Combo type</label>
+        <select id="comboType">
+          <option value="any">Any (2 mains)</option>
+          <option value="oneEach">1 Entrée + 1 Appetizer</option>
+          <option value="twoEntrees">2 Entrées</option>
+          <option value="twoApps">2 Appetizers</option>
+        </select></div>
+      <div class="field"><label for="restaurant">Restaurant</label>
+        <select id="restaurant"><option value="">Any restaurant</option></select></div>
+    </div>
+    <div class="row" style="margin-top:14px;justify-content:space-between;">
+      <div class="checks">
+        <label><input type="checkbox" id="reqProtein" checked /> Has a protein</label>
+        <label><input type="checkbox" id="reqVeg" checked /> Vegetarian-friendly</label>
+        <label><input type="checkbox" id="reqPork" checked /> Pork-free option</label>
+      </div>
+      <button class="primary" id="rerollBtn">🎲 Pick / Reroll</button>
+    </div>
+  </div>
+
+  <div class="results">
+    <div class="panel" id="comboCard">
+      <p class="restitle">Your combo</p>
+      <div id="comboBody"><p class="hint">Set your options above, then click “Pick / Reroll”.</p></div>
+    </div>
+    <div class="panel dz" id="dessertCard">
+      <p class="restitle">🍰 Dessert options <span style="text-transform:none;font-weight:500;color:var(--muted)">(not in total / max price)</span></p>
+      <div id="dessertBody"><p class="hint">Desserts for the chosen restaurant appear here.</p></div>
+    </div>
+  </div>
+</div>
+<!-- Fill-in example offered via the "CSV template" download button. -->
+<script type="text/plain" id="template-csv">Restaurant,Meal,Meal Status,Protein,Serving,Price,Delivery,Notes
+Example,Build-Your-Own,"Entree, Appetizer, Dessert","Vegetarian, Pork, Chicken, Beef, Seafood, Lamb, Turkey, None",15,$210.00,Delivery,"Everything you need to build your own, including your choices of base, protein, greens, toppings, and dressing."</script>
+
+<script>
+"use strict";
+
+/* ---------------------------- CSV parsing (RFC-4180) ---------------------------- */
+function parseCsv(content){
+  const rows=[]; let field=""; let record=[]; let inQuotes=false; let i=0; const n=content.length;
+  const endField=()=>{record.push(field);field="";};
+  const endRecord=()=>{endField();rows.push(record);record=[];};
+  while(i<n){
+    const c=content[i];
+    if(inQuotes){
+      if(c==='"'){ if(i+1<n&&content[i+1]==='"'){field+='"';i+=2;continue;} inQuotes=false;i++;continue; }
+      field+=c;i++;continue;
+    }
+    if(c==='"'){inQuotes=true;i++;continue;}
+    if(c===','){endField();i++;continue;}
+    if(c==='\r'){ if(i+1<n&&content[i+1]==='\n')i++; endRecord();i++;continue; }
+    if(c==='\n'){endRecord();i++;continue;}
+    field+=c;i++;
+  }
+  if(field.length>0||record.length>0){endField();rows.push(record);}
+  return rows;
+}
+
+/* ---------------------------- menu model ---------------------------- */
+const MEATS=new Set(["Chicken","Beef","Pork","Seafood","Turkey","Lamb"]);
+
+function cleanName(s){return (s||"").replace(/\s+/g," ").trim();}
+function oneLine(s){return (s||"").replace(/\s+/g," ").trim();}
+function parseIntSafe(s){const m=String(s||"").match(/\d+/);return m?parseInt(m[0],10):0;}
+function parsePrice(s){const c=String(s||"").replace(/[^0-9.]/g,"");const v=parseFloat(c);return isNaN(v)?0:v;}
+
+function normProtein(t){
+  switch(t.toLowerCase()){
+    case "vegetarian": case "veg": case "vegan": return "Vegetarian";
+    case "none": return "None";
+    case "chicken": return "Chicken";
+    case "beef": return "Beef";
+    case "pork": return "Pork";
+    case "seafood": case "fish": return "Seafood";
+    case "turkey": return "Turkey";
+    case "lamb": return "Lamb";
+    default: return t;
+  }
+}
+function parseStatuses(s){
+  const set=new Set();
+  for(const t of String(s||"").split(",").map(x=>x.trim()).filter(Boolean)){
+    const l=t.toLowerCase();
+    if(l==="entree"||l==="entrée"||l==="entrees") set.add("Entree");
+    else if(l==="appetizer"||l==="appetiser"||l==="appetizers"||l==="app") set.add("Appetizer");
+    else if(l==="dessert"||l==="desserts") set.add("Dessert");
+  }
+  return set;
+}
+function parseProteins(s){
+  const out=[];
+  for(const t of String(s||"").split(",").map(x=>x.trim()).filter(Boolean)){
+    const p=normProtein(t); if(!out.includes(p)) out.push(p);
+  }
+  return out;
+}
+
+function makeItem(raw){
+  const statuses=parseStatuses(raw.statusRaw);
+  const proteins=parseProteins(raw.proteinRaw);
+  const isEntree=statuses.has("Entree");
+  const isAppetizer=statuses.has("Appetizer");
+  const isDessert=statuses.has("Dessert");
+  const hasMeat=proteins.some(p=>MEATS.has(p));
+  const hasPork=proteins.includes("Pork");
+  const isPorkOnly=proteins.length>0 && proteins.every(p=>p==="Pork");
+  const statusDisplay=["Entree","Appetizer","Dessert"].filter(s=>statuses.has(s))
+    .map(s=>s==="Entree"?"Entrée":s).join(", ");
+  return {
+    restaurant:raw.restaurant, meal:raw.meal, statuses, proteins, proteinRaw:raw.proteinRaw||"",
+    serving:raw.serving, price:raw.price, delivery:raw.delivery||"", notes:raw.notes||"",
+    statusDisplay,
+    isEntree, isAppetizer, isDessert,
+    isMain:isEntree||isAppetizer,
+    isDessertOnly:isDessert && !isEntree && !isAppetizer,
+    hasMeat, hasPork, isPorkOnly,
+    // A real protein = any meat, or Vegetarian (beans/tofu). "None" / blank = a side, no protein.
+    hasRealProtein: hasMeat || proteins.includes("Vegetarian"),
+    isVegetarianFriendly: proteins.includes("Vegetarian") || !hasMeat,
+    canNoPorkEat: !isPorkOnly,
+    requiresVegetarianChoice: proteins.includes("Vegetarian") && hasMeat,
+    requiresNonPorkChoice: hasPork && !isPorkOnly,
+  };
+}
+
+function loadMenu(text){
+  const rows=parseCsv(text);
+  const items=[], warnings=[];
+  if(!rows.length){warnings.push("File is empty.");return{items,warnings};}
+  let start=0;
+  while(start<rows.length && rows[start].every(c=>!c||!c.trim())) start++;
+  if(start<rows.length && (rows[start][0]||"").trim().toLowerCase()==="restaurant") start++;
+  for(let r=start;r<rows.length;r++){
+    const row=rows[r];
+    if(row.every(c=>!c||!c.trim())) continue;
+    const get=idx=> idx<row.length ? String(row[idx]).trim() : "";
+    const restaurant=cleanName(get(0)), meal=cleanName(get(1));
+    if(!restaurant && !meal) continue;
+    if(!restaurant || !meal){warnings.push("Row "+(r+1)+": missing restaurant or meal — skipped.");continue;}
+    const statusRaw=get(2);
+    const statuses=parseStatuses(statusRaw);
+    if(statuses.size===0){warnings.push("Row "+(r+1)+" ("+meal+"): unrecognized status — skipped.");continue;}
+    if(get(3)==="") warnings.push("Row "+(r+1)+" ("+meal+"): no protein tag — treated as no protein (None).");
+    items.push(makeItem({restaurant,meal,statusRaw,proteinRaw:get(3),
+      serving:parseIntSafe(get(4)),price:parsePrice(get(5)),delivery:get(6),notes:get(7)}));
+  }
+  return {items,warnings};
+}
+
+/* ---------------------------- combo picker ---------------------------- */
+function randInt(n){return Math.floor(Math.random()*n);}
+
+function tryAssignRoles(a,b,type){
+  switch(type){
+    case "twoEntrees":
+      return (a.isEntree&&b.isEntree)?{ra:"Entree",rb:"Entree"}:null;
+    case "twoApps":
+      return (a.isAppetizer&&b.isAppetizer)?{ra:"Appetizer",rb:"Appetizer"}:null;
+    case "oneEach":
+      if(a.isEntree&&b.isAppetizer) return {ra:"Entree",rb:"Appetizer"};
+      if(a.isAppetizer&&b.isEntree) return {ra:"Appetizer",rb:"Entree"};
+      return null;
+    default: // any — prefer 1+1, then 2 entrées, then 2 apps
+      if(a.isEntree&&b.isAppetizer) return {ra:"Entree",rb:"Appetizer"};
+      if(a.isAppetizer&&b.isEntree) return {ra:"Appetizer",rb:"Entree"};
+      if(a.isEntree&&b.isEntree) return {ra:"Entree",rb:"Entree"};
+      if(a.isAppetizer&&b.isAppetizer) return {ra:"Appetizer",rb:"Appetizer"};
+      return null;
+  }
+}
+
+/* How many of an item to order so it alone covers the headcount (min 1). */
+function qtyFor(item,people){
+  return item.serving>0 ? Math.max(1, Math.ceil(people/item.serving)) : 1;
+}
+/* An item tagged BOTH Entrée and Appetizer is a complete combo by itself (a bundle). */
+function isBundle(m){ return m.isEntree && m.isAppetizer; }
+
+/* Filters applied to a whole combo (1 or 2 items) for a given headcount. */
+function passesFilters(mains,c){
+  if(c.maxPrice!=null){
+    const tot=mains.reduce((s,m)=>s+qtyFor(m,c.people)*m.price,0);
+    if(tot>c.maxPrice+1e-9) return false;
+  }
+  if(c.requireProtein && !mains.some(m=>m.hasRealProtein)) return false;
+  if(c.requireVeg && !mains.some(m=>m.isVegetarianFriendly)) return false;
+  if(c.requirePork && !mains.some(m=>m.canNoPorkEat)) return false;
+  return true;
+}
+
+/* All valid combos for a restaurant: single complete bundles, plus pairs of non-bundle mains.
+   (A bundle already includes an entrée + appetizer + dessert, so we never pair it with anything.) */
+function validCombos(items,c){
+  const mains=items.filter(i=>i.isMain);
+  const combos=[];
+  const allowSingle=(c.comboType==="oneEach"||c.comboType==="any");
+
+  // 1) Single complete bundles — they satisfy "1 entrée + 1 appetizer" on their own.
+  if(allowSingle){
+    for(const m of mains)
+      if(isBundle(m) && passesFilters([m],c)) combos.push({mains:[m],roles:null});
+  }
+  // 2) Two-item combos among non-bundle mains only.
+  const partial=mains.filter(m=>!isBundle(m));
+  for(let i=0;i<partial.length;i++) for(let j=i+1;j<partial.length;j++){
+    const a=partial[i],b=partial[j];
+    const roles=tryAssignRoles(a,b,c.comboType); if(!roles) continue;
+    if(passesFilters([a,b],c)) combos.push({mains:[a,b],roles:[roles.ra,roles.rb]});
+  }
+  return combos;
+}
+
+function sameCombo(x,y){
+  if(!x||!y||x.restaurant!==y.restaurant||x.mains.length!==y.mains.length) return false;
+  const a=x.mains.map(m=>m.meal).sort(), b=y.mains.map(m=>m.meal).sort();
+  return a.every((v,i)=>v===b[i]);
+}
+
+function pick(items,c,avoid){
+  const byRest={};
+  for(const it of items){
+    if(c.restaurant && it.restaurant!==c.restaurant) continue;
+    (byRest[it.restaurant]=byRest[it.restaurant]||[]).push(it);
+  }
+  const candidates=[];
+  for(const rest of Object.keys(byRest)){
+    const combos=validCombos(byRest[rest],c);
+    if(combos.length) candidates.push({rest,combos,items:byRest[rest]});
+  }
+  if(!candidates.length) return null;
+  const onlyOne=candidates.length===1 && candidates[0].combos.length===1;
+  const build=cand=>{
+    const combo=cand.combos[randInt(cand.combos.length)];
+    const desserts=cand.items.filter(i=>i.isDessertOnly).slice().sort((x,y)=>x.price-y.price);
+    const suggested=desserts.length?desserts[randInt(desserts.length)]:null;
+    return {restaurant:cand.rest,mains:combo.mains,roles:combo.roles,desserts,suggested};
+  };
+  for(let attempt=0;attempt<12;attempt++){
+    const res=build(candidates[randInt(candidates.length)]);
+    if(!avoid||onlyOne||!sameCombo(res,avoid)) return res;
+  }
+  return build(candidates[randInt(candidates.length)]);
+}
+
+/* dietary picks (prefer a real veg protein, then a meatless side, then a "must choose" item) */
+function vegPick(r){const m=r.mains;
+  return m.find(x=>x.isVegetarianFriendly&&x.hasRealProtein&&!x.requiresVegetarianChoice)
+    ||m.find(x=>x.isVegetarianFriendly&&!x.requiresVegetarianChoice)
+    ||m.find(x=>x.isVegetarianFriendly)||null;}
+function porkPick(r){const m=r.mains;
+  return m.find(x=>x.canNoPorkEat&&!x.requiresNonPorkChoice)||m.find(x=>x.canNoPorkEat)||null;}
+
+/* ---------------------------- DOM ---------------------------- */
+const $=id=>document.getElementById(id);
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
+function money(v){return "$"+Number(v).toFixed(2);}
+function roleName(r){return r==="Entree"?"Entrée":(r==="Appetizer"?"Appetizer":"Dessert");}
+function comboTypeLabel(a,b){
+  if(a==="Entree"&&b==="Entree") return "2 Entrées";
+  if(a==="Appetizer"&&b==="Appetizer") return "2 Appetizers";
+  return "1 Entrée + 1 Appetizer";
+}
+
+let MENU=[];        // current items
+let LAST=null;      // last combo (for reroll variety)
+
+/* Show every course tag the item carries (a bundle shows Entrée + Appetizer + Dessert). */
+function statusBadges(m){
+  let b='';
+  if(m.isEntree)    b+='<span class="badge e">Entrée</span>';
+  if(m.isAppetizer) b+='<span class="badge a">Appetizer</span>';
+  if(m.isDessert)   b+='<span class="badge d">Dessert</span>';
+  return b;
+}
+
+function mealBlock(m,people){
+  const q=qtyFor(m,people), sub=q*m.price, feeds=q*m.serving;
+  let h='<div class="meal"><p class="name">'+statusBadges(m)+esc(m.meal)+'</p>';
+  h+='<p class="orderline"><b>Order '+q+' ×</b> '+money(m.price)+' each = <b>'+money(sub)+'</b></p>';
+  h+='<p class="meta">each serves '+m.serving+' → '+q+' '+(q===1?'order':'orders')+' cover '+feeds+' (need '+people+')</p>';
+  h+='<p class="meta">Protein: '+esc(m.proteinRaw||"—")+' &nbsp;|&nbsp; Tagged: '+esc(m.statusDisplay)+'</p>';
+  if(m.delivery.trim()) h+='<p class="meta">Delivery: '+esc(oneLine(m.delivery))+'</p>';
+  if(m.notes.trim()) h+='<p class="meta">Notes: '+esc(m.notes)+'</p>';
+  h+='</div>';
+  return h;
+}
+
+function renderCombo(r,c){
+  if(!r){
+    $("comboBody").innerHTML='<p class="err">No combo matches your current filters.</p>'+
+      '<p class="hint">Try raising the max price, lowering the number of people, switching Combo type to “Any”, '+
+      'choosing a different restaurant, or unticking a dietary requirement.</p>';
+    $("dessertBody").innerHTML='<p class="hint">—</p>';
+    LAST=null; return;
+  }
+  const ppl=c.people;
+  const label = r.mains.length===1
+    ? "Single bundle — "+esc(r.mains[0].statusDisplay)
+    : comboTypeLabel(r.roles[0],r.roles[1]);
+  let h='<p class="rest">'+esc(r.restaurant)+'</p>';
+  h+='<p class="combotype">Combo: '+label+' · for '+ppl+' '+(ppl===1?'person':'people')+'</p>';
+  if(r.mains.length===1)
+    h+='<p class="hint" style="margin:-6px 0 10px;">This one item already includes an entrée, appetizer and dessert — you only need it.</p>';
+  h+=r.mains.map(m=>mealBlock(m,ppl)).join('');
+
+  const total=r.mains.reduce((s,m)=>s+qtyFor(m,ppl)*m.price,0);
+  h+='<div class="totals">';
+  h+='<div class="ordersum"><b>📋 What to order for '+ppl+' '+(ppl===1?'person':'people')+':</b><br>'+
+     r.mains.map(m=>'<span class="qty">'+qtyFor(m,ppl)+' ×</span> '+esc(m.meal)+' = '+money(qtyFor(m,ppl)*m.price)).join('<br>')+'</div>';
+  h+='<div style="margin-top:8px;"><span class="big">Order total (mains): '+money(total)+'</span>'+
+     (c.maxPrice!=null?' <span class="hint">/ max '+money(c.maxPrice)+'</span>':'')+'</div>';
+  h+='</div>';
+
+  const veg=vegPick(r), pork=porkPick(r);
+  const protMains=r.mains.filter(m=>m.hasRealProtein);
+  h+='<div class="diet">';
+  if(protMains.length){
+    h+='<div class="item ok">🍗 Protein: '+protMains.map(m=>esc(m.meal)+' <span class="hint">('+esc(m.proteinRaw)+')</span>').join(' · ')+'</div>';
+  } else {
+    h+='<div class="item bad">⚠️ No protein in this combo — it’s only protein-free sides.</div>';
+  }
+  if(veg){
+    h+='<div class="item ok">✅ Vegetarian can eat: '+esc(veg.meal);
+    if(veg.requiresVegetarianChoice)
+      h+='<span class="note">→ This item offers several proteins ('+esc(veg.proteinRaw)+') — the vegetarian option must be chosen.</span>';
+    h+='</div>';
+  } else {
+    h+='<div class="item bad">⚠️ No clearly vegetarian-friendly item in this combo.</div>';
+  }
+  if(pork){
+    h+='<div class="item ok">✅ No-pork person can eat: '+esc(pork.meal);
+    if(pork.requiresNonPorkChoice)
+      h+='<span class="note">→ This item includes pork ('+esc(pork.proteinRaw)+') — a non-pork option must be chosen.</span>';
+    h+='</div>';
+  } else {
+    h+='<div class="item bad">⚠️ Every item in this combo is pork-only.</div>';
+  }
+  h+='</div>';
+
+  $("comboBody").innerHTML=h;
+  renderDesserts(r,c);
+  LAST=r;
+}
+
+function renderDesserts(r,c){
+  if(!r.desserts.length){
+    $("dessertBody").innerHTML='<p class="empty">No standalone desserts listed for this restaurant.</p>';
+    return;
+  }
+  const ppl=c?c.people:1;
+  let h='<p class="hint" style="margin-top:0">'+esc(r.restaurant)+' — '+r.desserts.length+
+        ' option(s). Not added to the order total or the max price.</p>';
+  for(const d of r.desserts){
+    const sug=d===r.suggested;
+    const q=qtyFor(d,ppl);
+    h+='<div class="dess'+(sug?' sug':'')+'"><div class="dn">'+(sug?'🍰 ':'• ')+esc(d.meal)+
+       (sug?' (suggested)':'')+'</div>';
+    h+='<div class="dm">'+money(d.price)+' • serves '+d.serving+' • order <b>'+q+'</b> for '+ppl+' = '+money(q*d.price)+'</div>';
+    if(d.notes.trim()) h+='<div class="dm">'+esc(oneLine(d.notes))+'</div>';
+    h+='</div>';
+  }
+  $("dessertBody").innerHTML=h;
+}
+
+/* ---------------------------- settings + data ---------------------------- */
+const LS_SET="aims_settings";
+
+function readCriteria(){
+  let maxPrice=null;
+  const mp=$("maxPrice").value.trim().replace(/^\$/,"").trim();
+  if(mp!==""){ const v=parseFloat(mp); if(!isNaN(v)) maxPrice=v; }
+  return {
+    people:Math.max(1,parseInt($("people").value,10)||1),
+    maxPrice,
+    comboType:$("comboType").value,
+    restaurant:$("restaurant").value||null,
+    requireVeg:$("reqVeg").checked,
+    requirePork:$("reqPork").checked,
+    requireProtein:$("reqProtein").checked,
+  };
+}
+function saveSettings(){
+  const s={people:$("people").value,maxPrice:$("maxPrice").value,comboType:$("comboType").value,
+    restaurant:$("restaurant").value,reqVeg:$("reqVeg").checked,reqPork:$("reqPork").checked,
+    reqProtein:$("reqProtein").checked};
+  try{localStorage.setItem(LS_SET,JSON.stringify(s));}catch(e){}
+}
+function loadSettings(){
+  let s={}; try{s=JSON.parse(localStorage.getItem(LS_SET)||"{}");}catch(e){}
+  if(s.people) $("people").value=s.people;
+  if(s.maxPrice!=null) $("maxPrice").value=s.maxPrice;
+  if(s.comboType) $("comboType").value=s.comboType;
+  if(typeof s.reqVeg==="boolean") $("reqVeg").checked=s.reqVeg;
+  if(typeof s.reqPork==="boolean") $("reqPork").checked=s.reqPork;
+  if(typeof s.reqProtein==="boolean") $("reqProtein").checked=s.reqProtein;
+  return s;
+}
+
+function setMenu(text,sourceLabel){
+  const {items,warnings}=loadMenu(text);
+  MENU=items; LAST=null;
+  const restaurants=[...new Set(items.map(i=>i.restaurant))].sort((a,b)=>a.localeCompare(b));
+  const prev=$("restaurant").value;
+  $("restaurant").innerHTML='<option value="">Any restaurant</option>'+
+    restaurants.map(r=>'<option value="'+esc(r)+'">'+esc(r)+'</option>').join("");
+  if(restaurants.includes(prev)) $("restaurant").value=prev;
+  $("status").innerHTML="<b>"+items.length+"</b> items · <b>"+restaurants.length+"</b> restaurants"+
+    (sourceLabel?" · "+esc(sourceLabel):"")+(warnings.length?" · "+warnings.length+" row warning(s)":"");
+  $("rerollBtn").disabled=items.length===0;
+  $("comboBody").innerHTML=items.length
+    ? '<p class="hint">Set your options above, then click “Pick / Reroll”.</p>'
+    : '<p class="err">No usable rows found in this data.</p>';
+  $("dessertBody").innerHTML='<p class="hint">Desserts for the chosen restaurant appear here.</p>';
+  renderPreview();
+}
+
+/* Download a fill-in example CSV so people can build their own menu file. */
+function downloadTemplate(){
+  const csv=($("template-csv").textContent||"").trim()+"\n";
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download="catering-menu-template.csv";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+/* Preview panel: each restaurant is a closed dropdown; opening it shows how every row imported. */
+function previewFlags(m){
+  const t=[];
+  if(isBundle(m)) t.push('<span class="ptag b">bundle = full combo (order 1)</span>');
+  if(m.isDessertOnly) t.push('<span class="ptag">dessert</span>');
+  t.push(m.hasRealProtein?'<span class="ptag g">has protein</span>':'<span class="ptag w">no protein (side)</span>');
+  if(m.isVegetarianFriendly) t.push('<span class="ptag g">veg-ok</span>');
+  t.push(m.canNoPorkEat?'<span class="ptag g">pork-ok</span>':'<span class="ptag w">pork only</span>');
+  if(!String(m.proteinRaw).trim()) t.push('<span class="ptag w">⚠ no protein tag</span>');
+  return t.join(" ");
+}
+function renderPreview(){
+  const body=$("previewBody");
+  if(!MENU.length){ $("previewPanel").style.display="none"; body.innerHTML=""; return; }
+  const byRest={};
+  for(const m of MENU){ (byRest[m.restaurant]=byRest[m.restaurant]||[]).push(m); }
+  const rests=Object.keys(byRest).sort((a,b)=>a.localeCompare(b));
+  $("previewCount").textContent="("+rests.length+" restaurants · "+MENU.length+" items)";
+  let h="";
+  for(const r of rests){
+    const items=byRest[r];
+    h+='<details class="rcard"><summary>'+esc(r)+' <span class="cnt">'+items.length+' item'+(items.length===1?'':'s')+'</span></summary><div class="pmeals">';
+    for(const m of items){
+      h+='<div class="pmeal"><div class="pmn">'+statusBadges(m)+esc(m.meal)+'</div>'+
+         '<div class="pmeta">Protein: '+esc(m.proteinRaw||"—")+' &nbsp;·&nbsp; serves '+m.serving+' &nbsp;·&nbsp; '+money(m.price)+'</div>'+
+         '<div class="pflags">'+previewFlags(m)+'</div></div>';
+    }
+    h+='</div></details>';
+  }
+  body.innerHTML=h;
+  $("previewPanel").style.display="";
+}
+
+function doPick(){
+  if(!MENU.length) return;
+  const c=readCriteria();
+  saveSettings();
+  renderCombo(pick(MENU,c,LAST),c);
+}
+
+/* Reject anything that isn't really a menu CSV (e.g. an HTML page) so we can warn instead of breaking. */
+function looksLikeCsvMenu(text){
+  if(!text) return false;
+  if(/^\s*<\s*(!doctype|html)/i.test(text.slice(0,200))) return false;
+  return loadMenu(text).items.length>0;
+}
+
+function showNoMenu(){
+  MENU=[]; LAST=null;
+  $("status").textContent='No menu loaded — click “Upload menu CSV”.';
+  $("rerollBtn").disabled=true;
+  $("comboBody").innerHTML='<p class="hint">Upload your menu CSV to get started. You’ll upload it each time you open this — nothing is saved.</p>';
+  $("dessertBody").innerHTML='';
+  renderPreview();
+}
+
+/* ---------------------------- wire up ---------------------------- */
+function init(){
+  loadSettings();
+  showNoMenu();   // no default and no remembered menu — a fresh upload is required each time
+
+  $("rerollBtn").addEventListener("click",doPick);
+  $("templateBtn").addEventListener("click",downloadTemplate);
+  $("uploadBtn").addEventListener("click",()=>$("fileInput").click());
+  $("fileInput").addEventListener("change",ev=>{
+    const f=ev.target.files&&ev.target.files[0]; if(!f) return;
+    const rd=new FileReader();
+    rd.onload=()=>{
+      const text=String(rd.result);
+      if(!looksLikeCsvMenu(text)){
+        $("status").innerHTML='<span class="err">That file doesn’t look like a menu CSV (needs a Restaurant,Meal,… header).</span>';
+        return;
+      }
+      setMenu(text,"uploaded: "+f.name);   // kept only for this session; nothing is stored
+    };
+    rd.onerror=()=>{ $("status").innerHTML='<span class="err">Could not read that file.</span>'; };
+    rd.readAsText(f);
+    ev.target.value="";
+  });
+  ["people","maxPrice","comboType","restaurant","reqProtein","reqVeg","reqPork"].forEach(id=>{
+    $(id).addEventListener("change",saveSettings);
+  });
+}
+window.addEventListener("DOMContentLoaded",init);
+</script>
+</body>
+</html>
