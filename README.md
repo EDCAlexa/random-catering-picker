@@ -1,57 +1,60 @@
 # Weekly Catering Picker
 
-A single-file web app that picks a random catering combo from one restaurant and lets you
-reroll until you like it. No build step, no server, no dependencies — just `index.html`.
+A little web page for picking the team's catering order. Upload your menu, say how many
+people you're feeding, and hit the button — it picks a restaurant and a combo for you.
+Don't love it? Reroll until you do.
 
-## How it works
+## Using it
 
-1. Open the app and click **⬆️ Upload menu CSV** to load your menu (exported from your
-   spreadsheet: File → Download → Comma-separated values `.csv`).
-2. The menu is **remembered in your browser**, so reroll — and even a page refresh — keep
-   using it without re-uploading. Upload again only when the menu changes.
-3. Set **People**, an optional **Max $ total**, **Combo type**, **Restaurant**, and the
-   dietary toggles, then hit **🎲 Pick / Reroll**.
+1. **Upload your menu.** Click **⬆️ Upload menu CSV** and choose the file you exported from
+   your spreadsheet (in Google Sheets: *File → Download → Comma-separated values*). It's read
+   right there in your browser. New to this? Hit **⬇️ CSV template** to grab a
+   filled-in example you can copy. We decided to upload it into an editable Google Sheet.
+2. **Set your options.** Number of people, an optional budget cap, the kind of combo you want
+   (one entrée + one appetizer, two entrées, two appetizers, or "Any"), and the dietary
+   checkboxes.
+3. **Hit 🎲 Pick / Reroll.** You get a restaurant, the items to order and how many of each, the
+   total, and a note about who can eat what. Reroll as much as you want.
 
-### Expected CSV columns
+There's also a **🔍 Preview how your menu imported** section. Open it and each restaurant
+shows up as a dropdown; click one to see exactly how the app read every row — course tags,
+proteins, serving size, price, and little labels like "bundle," "has protein," or
+"⚠ no protein tag" so you can catch anything that didn't come in the way you expected.
+
+## What your CSV should look like
+
+Eight columns, starting with this header row:
+
 `Restaurant, Meal, Meal Status, Protein, Serving, Price, Delivery, Notes`
-- **Meal Status** — `Entree` / `Appetizer` / `Dessert` (comma-separated if several).
-- **Protein** — `Chicken, Beef, Pork, Seafood, Turkey, Lamb`, `Vegetarian` (a real veg
-  protein — beans/tofu), or `None` (a side with no protein). Comma-separated if several.
-- **Serving** — a number (how many people one order feeds). **Price** — like `$108.00`.
 
-## Hosting
+- **Meal Status** — `Entree`, `Appetizer`, and/or `Dessert`. Comma-separate them if one item
+  covers several courses (like a bundle that's an entrée + appetizer + dessert all in one).
+- **Protein** — `Chicken`, `Beef`, `Pork`, `Seafood`, `Turkey`, `Lamb`, `Vegetarian` (an actual
+  vegetarian protein, like beans or tofu), or `None` (a side with no protein — fries, mac &
+  cheese, and so on). Comma-separate if there's more than one.
+- **Serving** — a plain number: how many people one order feeds.
+- **Price** — like `$210.00`.
+- **Delivery** and **Notes** — free text. They show up with the pick but don't affect anything.
 
-It's a static page, so host it anywhere:
-- **Just open it** — double-click `index.html`. (To make the "remembered" menu survive
-  reloads reliably, serve it over http rather than `file://` — e.g. `python -m http.server`.)
-- **GitHub Pages** — put `index.html` in a repo, enable Pages, share the link. Add an empty
-  file named `.nojekyll` so Pages serves everything as-is. ⚠️ A free Pages site is **public** —
-  anyone with the URL can use it (the menu lives only in each person's browser after they
-  upload, so it isn't published).
-- **Netlify / SharePoint / any intranet** — drop the file in.
+The **CSV template** button downloads a one-row example so you can see the format and build
+your own from it.
 
-## The rules it enforces
+## How it picks
 
-- A combo is **two "main" items from one restaurant** — 1 entrée + 1 appetizer, 2 entrées,
-  or 2 appetizers (selectable, or "Any").
-- **Bundles count as one item.** An item tagged both Entrée *and* Appetizer (e.g. a "Perfect
-  Bundle" that includes entrée + appetizer + dessert) is a complete combo on its own, so it's
-  shown alone — never paired with a second bundle. All of its course tags are shown as badges.
-- **Has a protein** (toggle, on by default): at least one main carries a real protein — any
-  meat, or `Vegetarian`. Stops "two sides" combos. A `🍗 Protein:` line names the dish.
-- **Vegetarian-friendly:** at least one main is `Vegetarian` or meatless (`None`). A multi-protein
-  item counts, with a note that the vegetarian option must be chosen.
-- **Pork-free:** at least one main isn't pork-only. A multi-protein item counts, with a note that
-  a non-pork option must be chosen. A pork-only item ("Pork Dumplings") doesn't.
-- **People** → the app computes **how many of each item to order** to cover the headcount
-  (serves 20, for 60 people → order 3); there may be overlap / extra food.
-- **Max $ total** → caps the quantity-adjusted order total of the mains (blank = no limit).
-- **Desserts** are listed separately (with a suggested quantity) and never counted in the total.
-- Any meal with a **blank protein cell** is flagged in the status as a "row warning."
-
-## Files
-
-| File | Purpose |
-|------|---------|
-| `index.html` | The entire app. |
-| `menu.csv` | A sample menu you can upload (your data — not needed for the app to run). |
+- A combo is **two items from the same restaurant** — one entrée + one appetizer, two entrées,
+  or two appetizers. It only ever pulls from a single place, so it's one order.
+- If a single item is tagged as **both an entrée and an appetizer** — one of those all-in-one
+  bundle packages — that's already a full combo, so it suggests just the one thing instead of
+  doubling up. All of its course tags show as badges.
+- **Everybody gets protein.** At least one item in the combo has a real protein (a meat, or
+  Vegetarian), so it won't hand you a meal that's two sides. (Checkbox — you can switch it off.)
+- **The vegetarian can eat.** At least one item works for them. If it's a build-your-own with
+  several proteins, the result reminds you to pick the vegetarian option.
+- **The no-pork person can eat.** At least one item isn't pork-only, with the same kind of
+  reminder on multi-protein items. (A pork-only dish like "Pork Dumplings" won't count for them.)
+- **Quantities are worked out for you.** Feeding 60 people with an item that serves 20? It says
+  order 3. Expect a little overlap or leftovers — better than running short.
+- **Budget** caps the total of what you'd actually order, quantities included. Leave it blank
+  for no limit.
+- **Desserts** are listed off to the side for whichever restaurant got picked, with a suggested
+  quantity. They're never added to the total or counted against your budget.
