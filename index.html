@@ -58,6 +58,7 @@
   .badge{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:99px;margin-right:6px;vertical-align:1px;}
   .badge.e{background:#eef4ff;color:#1452b8;} .badge.a{background:#eefaf0;color:#0a7a36;}
   .badge.d{background:#f6eefc;color:#8a3bb0;}
+  .badge.s{background:#e6f5f3;color:#0f766e;}
   .totals{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:14.5px;}
   .totals .big{font-weight:800;font-size:16px;}
   .ordersum{background:#eef4ff;border:1px solid #d6e4fb;border-radius:8px;padding:10px 12px;font-size:14.5px;line-height:1.7;}
@@ -70,6 +71,8 @@
   .diet .note{display:block;margin-top:4px;font-weight:500;color:var(--amber);background:var(--amberbg);
     border-radius:6px;padding:6px 8px;font-size:13px;}
   .dz{background:#fffdf7;}
+  .sz{background:#f8fcf4;}
+  .side{display:flex;flex-direction:column;}
   .dess{border-top:1px solid var(--line);padding:9px 0;}
   .dess:first-of-type{border-top:none;}
   .dess .dn{font-weight:600;}
@@ -159,9 +162,15 @@
       <p class="restitle">Your combo</p>
       <div id="comboBody"><p class="hint">Set your options above, then click “Pick / Reroll”.</p></div>
     </div>
-    <div class="panel dz" id="dessertCard">
-      <p class="restitle">🍰 Dessert options <span style="text-transform:none;font-weight:500;color:var(--muted)">(not in total / max price)</span></p>
-      <div id="dessertBody"><p class="hint">Desserts for the chosen restaurant appear here.</p></div>
+    <div class="side">
+      <div class="panel sz" id="saladCard">
+        <p class="restitle">🥗 Salad options <span style="text-transform:none;font-weight:500;color:var(--muted)">(not in total / max price)</span></p>
+        <div id="saladBody"><p class="hint">Salads for the chosen restaurant appear here.</p></div>
+      </div>
+      <div class="panel dz" id="dessertCard">
+        <p class="restitle">🍰 Dessert options <span style="text-transform:none;font-weight:500;color:var(--muted)">(not in total / max price)</span></p>
+        <div id="dessertBody"><p class="hint">Desserts for the chosen restaurant appear here.</p></div>
+      </div>
     </div>
   </div>
 </div>
@@ -220,6 +229,7 @@ function parseStatuses(s){
     const l=t.toLowerCase();
     if(l==="entree"||l==="entrée"||l==="entrees") set.add("Entree");
     else if(l==="appetizer"||l==="appetiser"||l==="appetizers"||l==="app") set.add("Appetizer");
+    else if(l==="salad"||l==="salads") set.add("Salad");
     else if(l==="dessert"||l==="desserts") set.add("Dessert");
   }
   return set;
@@ -237,19 +247,22 @@ function makeItem(raw){
   const proteins=parseProteins(raw.proteinRaw);
   const isEntree=statuses.has("Entree");
   const isAppetizer=statuses.has("Appetizer");
+  const isSalad=statuses.has("Salad");
   const isDessert=statuses.has("Dessert");
   const hasMeat=proteins.some(p=>MEATS.has(p));
   const hasPork=proteins.includes("Pork");
   const isPorkOnly=proteins.length>0 && proteins.every(p=>p==="Pork");
-  const statusDisplay=["Entree","Appetizer","Dessert"].filter(s=>statuses.has(s))
+  const statusDisplay=["Entree","Appetizer","Salad","Dessert"].filter(s=>statuses.has(s))
     .map(s=>s==="Entree"?"Entrée":s).join(", ");
   return {
     restaurant:raw.restaurant, meal:raw.meal, statuses, proteins, proteinRaw:raw.proteinRaw||"",
     serving:raw.serving, price:raw.price, delivery:raw.delivery||"", notes:raw.notes||"",
     statusDisplay,
-    isEntree, isAppetizer, isDessert,
+    isEntree, isAppetizer, isSalad, isDessert,
     isMain:isEntree||isAppetizer,
-    isDessertOnly:isDessert && !isEntree && !isAppetizer,
+    // Salad-only and dessert-only items are sides shown in their own panels — not in the combo.
+    isSaladOnly:isSalad && !isEntree && !isAppetizer,
+    isDessertOnly:isDessert && !isEntree && !isAppetizer && !isSalad,
     hasMeat, hasPork, isPorkOnly,
     // A real protein = any meat, or Vegetarian (beans/tofu). "None" / blank = a side, no protein.
     hasRealProtein: hasMeat || proteins.includes("Vegetarian"),
@@ -368,9 +381,11 @@ function pick(items,c,avoid){
   const onlyOne=candidates.length===1 && candidates[0].combos.length===1;
   const build=cand=>{
     const combo=cand.combos[randInt(cand.combos.length)];
+    const salads=cand.items.filter(i=>i.isSaladOnly).slice().sort((x,y)=>x.price-y.price);
+    const suggestedSalad=salads.length?salads[randInt(salads.length)]:null;
     const desserts=cand.items.filter(i=>i.isDessertOnly).slice().sort((x,y)=>x.price-y.price);
     const suggested=desserts.length?desserts[randInt(desserts.length)]:null;
-    return {restaurant:cand.rest,mains:combo.mains,roles:combo.roles,desserts,suggested};
+    return {restaurant:cand.rest,mains:combo.mains,roles:combo.roles,salads,suggestedSalad,desserts,suggested};
   };
   for(let attempt=0;attempt<12;attempt++){
     const res=build(candidates[randInt(candidates.length)]);
@@ -406,6 +421,7 @@ function statusBadges(m){
   let b='';
   if(m.isEntree)    b+='<span class="badge e">Entrée</span>';
   if(m.isAppetizer) b+='<span class="badge a">Appetizer</span>';
+  if(m.isSalad)     b+='<span class="badge s">Salad</span>';
   if(m.isDessert)   b+='<span class="badge d">Dessert</span>';
   return b;
 }
@@ -475,29 +491,36 @@ function renderCombo(r,c){
   h+='</div>';
 
   $("comboBody").innerHTML=h;
+  renderSalads(r,c);
   renderDesserts(r,c);
   LAST=r;
 }
 
-function renderDesserts(r,c){
-  if(!r.desserts.length){
-    $("dessertBody").innerHTML='<p class="empty">No standalone desserts listed for this restaurant.</p>';
+/* Shared renderer for the "side" panels (salads, desserts) — listed for reference,
+   never counted in the order total or the budget. */
+function renderSideList(items,suggestedItem,sourceLabel,emoji,bodyId,restaurant,c,showProtein){
+  const body=$(bodyId);
+  if(!items.length){
+    body.innerHTML='<p class="empty">No standalone '+sourceLabel+'s listed for this restaurant.</p>';
     return;
   }
   const ppl=c?c.people:1;
-  let h='<p class="hint" style="margin-top:0">'+esc(r.restaurant)+' — '+r.desserts.length+
+  let h='<p class="hint" style="margin-top:0">'+esc(restaurant)+' — '+items.length+
         ' option(s). Not added to the order total or the max price.</p>';
-  for(const d of r.desserts){
-    const sug=d===r.suggested;
+  for(const d of items){
+    const sug=d===suggestedItem;
     const q=qtyFor(d,ppl);
-    h+='<div class="dess'+(sug?' sug':'')+'"><div class="dn">'+(sug?'🍰 ':'• ')+esc(d.meal)+
+    h+='<div class="dess'+(sug?' sug':'')+'"><div class="dn">'+(sug?emoji+' ':'• ')+esc(d.meal)+
        (sug?' (suggested)':'')+'</div>';
     h+='<div class="dm">'+money(d.price)+' • serves '+d.serving+' • order <b>'+q+'</b> for '+ppl+' = '+money(q*d.price)+'</div>';
+    if(showProtein && d.proteinRaw && d.proteinRaw!=='None') h+='<div class="dm">Protein: '+esc(d.proteinRaw)+'</div>';
     if(d.notes.trim()) h+='<div class="dm">'+esc(oneLine(d.notes))+'</div>';
     h+='</div>';
   }
-  $("dessertBody").innerHTML=h;
+  body.innerHTML=h;
 }
+function renderSalads(r,c){ renderSideList(r.salads,r.suggestedSalad,"salad","🥗","saladBody",r.restaurant,c,true); }
+function renderDesserts(r,c){ renderSideList(r.desserts,r.suggested,"dessert","🍰","dessertBody",r.restaurant,c,false); }
 
 /* ---------------------------- settings + data ---------------------------- */
 const LS_SET="aims_settings";
@@ -547,6 +570,7 @@ function setMenu(text,sourceLabel){
   $("comboBody").innerHTML=items.length
     ? '<p class="hint">Set your options above, then click “Pick / Reroll”.</p>'
     : '<p class="err">No usable rows found in this data.</p>';
+  $("saladBody").innerHTML='<p class="hint">Salads for the chosen restaurant appear here.</p>';
   $("dessertBody").innerHTML='<p class="hint">Desserts for the chosen restaurant appear here.</p>';
   renderPreview();
 }
@@ -566,7 +590,8 @@ function downloadTemplate(){
 function previewFlags(m){
   const t=[];
   if(isBundle(m)) t.push('<span class="ptag b">bundle = full combo (order 1)</span>');
-  if(m.isDessertOnly) t.push('<span class="ptag">dessert</span>');
+  if(m.isSaladOnly) t.push('<span class="ptag">salad (shown separately)</span>');
+  if(m.isDessertOnly) t.push('<span class="ptag">dessert (shown separately)</span>');
   t.push(m.hasRealProtein?'<span class="ptag g">has protein</span>':'<span class="ptag w">no protein (side)</span>');
   if(m.isVegetarianFriendly) t.push('<span class="ptag g">veg-ok</span>');
   t.push(m.canNoPorkEat?'<span class="ptag g">pork-ok</span>':'<span class="ptag w">pork only</span>');
@@ -614,6 +639,7 @@ function showNoMenu(){
   $("status").textContent='No menu loaded — click “Upload menu CSV”.';
   $("rerollBtn").disabled=true;
   $("comboBody").innerHTML='<p class="hint">Upload your menu CSV to get started. You’ll upload it each time you open this — nothing is saved.</p>';
+  $("saladBody").innerHTML='';
   $("dessertBody").innerHTML='';
   renderPreview();
 }
